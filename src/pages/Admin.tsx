@@ -1,12 +1,15 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { 
   Users, Settings, CreditCard, Book, ChevronDown, 
-  Search, Filter, MoreVertical, Edit, Trash, Eye 
+  Search, Filter, MoreVertical, Edit, Trash, Eye, PlusCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAdmin } from '@/hooks/useAdmin';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 // Mock user data
 const users = [
@@ -204,11 +207,40 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-const AdminUsers: React.FC = () => (
+const AdminUsers: React.FC = () => {
+  const { addAdmin } = useAdmin();
+  const [showAddAdminDialog, setShowAddAdminDialog] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminEmail) {
+      toast.error('Por favor, informe um email');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    const success = await addAdmin(adminEmail);
+    
+    if (success) {
+      setAdminEmail('');
+      setShowAddAdminDialog(false);
+    }
+    setIsSubmitting(false);
+  };
+
+  return (
   <div className="bg-white rounded-lg border">
     <div className="p-4 border-b flex justify-between items-center">
       <h3 className="font-medium">Usuários ({users.length})</h3>
-      <Button>Novo Usuário</Button>
+      <div className="flex gap-2">
+        <Button onClick={() => setShowAddAdminDialog(true)}>
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Adicionar Admin
+        </Button>
+        <Button>Novo Usuário</Button>
+      </div>
     </div>
     
     <div className="overflow-x-auto">
@@ -260,8 +292,44 @@ const AdminUsers: React.FC = () => (
         </tbody>
       </table>
     </div>
+
+    <Dialog open={showAddAdminDialog} onOpenChange={setShowAddAdminDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Adicionar Administrador</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleAddAdmin}>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="adminEmail" className="text-sm font-medium">
+                Email do Usuário
+              </label>
+              <Input
+                id="adminEmail"
+                placeholder="email@exemplo.com"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                type="email"
+                required
+              />
+              <p className="text-xs text-gray-500">
+                O usuário deve já estar cadastrado no sistema.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowAddAdminDialog(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Adicionando...' : 'Adicionar Admin'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   </div>
-);
+)};
 
 const AdminMemories: React.FC = () => (
   <div className="bg-white rounded-lg border">
@@ -430,6 +498,23 @@ const AdminSettings: React.FC = () => (
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { isAdmin, isLoading } = useAdmin();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-memory-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não for administrador, o hook useAdmin já fará o redirecionamento
+  if (isAdmin === false) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

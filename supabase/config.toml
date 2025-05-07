@@ -2,3 +2,5 @@
 project_id = "bsribrdwyvrhzagoqxvr"
 
 [functions.create-payment]
+
+[functions.add-admin]
