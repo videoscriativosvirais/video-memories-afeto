@@ -2,5 +2,7 @@
 project_id = "bsribrdwyvrhzagoqxvr"
 
 [functions.create-payment]
+verify_jwt = false
 
 [functions.add-admin]
+
