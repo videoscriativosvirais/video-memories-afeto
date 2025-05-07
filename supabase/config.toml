@@ -6,3 +6,5 @@ verify_jwt = false
 
 [functions.add-admin]
 
+[functions.webhook-stripe]
+verify_jwt = false
