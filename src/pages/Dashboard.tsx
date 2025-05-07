@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Heart, Plus, Calendar, Music, Video, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import MemorySlideshow from '@/components/memory/MemorySlideshow';
 
 interface Memory {
   id: string;
@@ -15,11 +16,15 @@ interface Memory {
   emoji: string | null;
   thumbnail: string | null;
   spotify_link: string | null;
+  text: string | null;
+  photos: string[] | null;
 }
 
 const Dashboard: React.FC = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openMemoryId, setOpenMemoryId] = useState<string | null>(null);
+  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -93,6 +98,51 @@ const Dashboard: React.FC = () => {
       toast.error('Erro ao carregar suas memórias');
       setLoading(false);
     }
+  };
+  
+  const handleViewVideo = async (memoryId: string) => {
+    // Encontrar a memória selecionada
+    const memory = memories.find(m => m.id === memoryId);
+    if (!memory) return;
+    
+    setSelectedMemory(memory);
+    
+    try {
+      // Buscar as fotos da memória se ainda não tiverem sido carregadas
+      if (!memory.photos || memory.photos.length === 0) {
+        const { data, error } = await supabase
+          .from('memory_photos')
+          .select('photo_url')
+          .eq('memory_id', memoryId)
+          .order('order', { ascending: true });
+          
+        if (error) {
+          console.error('Erro ao buscar fotos da memória:', error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          const photos = data.map(item => item.photo_url);
+          // Atualizar a memória com as fotos
+          memory.photos = photos;
+          // Atualizar no estado local
+          setMemories(prevMemories => 
+            prevMemories.map(m => m.id === memoryId ? {...m, photos} : m)
+          );
+        }
+      }
+      
+      // Abrir o modal
+      setOpenMemoryId(memoryId);
+    } catch (error) {
+      console.error('Erro ao processar visualização do vídeo:', error);
+      toast.error('Erro ao carregar o slideshow');
+    }
+  };
+
+  const closeDialog = () => {
+    setOpenMemoryId(null);
+    setSelectedMemory(null);
   };
   
   return (
@@ -171,6 +221,7 @@ const Dashboard: React.FC = () => {
                       variant="outline" 
                       size="sm"
                       className="text-memory-600 border-memory-200"
+                      onClick={() => handleViewVideo(memory.id)}
                     >
                       <Video className="h-4 w-4 mr-2" />
                       Ver vídeo
@@ -211,6 +262,22 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* Dialog para exibir o slideshow/vídeo da memória */}
+      <Dialog open={openMemoryId !== null} onOpenChange={closeDialog}>
+        <DialogContent className="max-w-4xl w-full">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-serif text-memory-700">
+              {selectedMemory?.title}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedMemory && (
+            <MemorySlideshow 
+              memory={selectedMemory} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
