@@ -90,10 +90,18 @@ const Step4VideoGeneration: React.FC = () => {
         )}
         
         {memory.videoUrl ? (
-          <div className="aspect-video rounded-lg overflow-hidden bg-black mb-6">
-            <div className="w-full h-full flex items-center justify-center text-white">
-              <p>Simulação de vídeo gerado</p>
-            </div>
+          <div className="aspect-video rounded-lg overflow-hidden bg-black mb-6 relative">
+            <video 
+              className="w-full h-full object-contain"
+              controls
+              autoPlay
+              muted
+              loop
+              playsInline
+            >
+              <source src={memory.videoUrl} type="video/mp4" />
+              Seu navegador não suporta vídeos HTML5.
+            </video>
           </div>
         ) : (
           !isProcessing && (

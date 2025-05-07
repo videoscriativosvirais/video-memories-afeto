@@ -135,7 +135,7 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     await new Promise(resolve => setTimeout(resolve, 3000));
     setMemory(prev => ({
       ...prev,
-      videoUrl: 'https://example.com/fake-video-url',
+      videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     }));
     setIsProcessing(false);
     return Promise.resolve();
