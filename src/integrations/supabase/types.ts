@@ -57,6 +57,38 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_photos: {
+        Row: {
+          created_at: string | null
+          id: string
+          memory_id: string | null
+          order: number
+          photo_url: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          memory_id?: string | null
+          order: number
+          photo_url: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          memory_id?: string | null
+          order?: number
+          photo_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_photos_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchases: {
         Row: {
           amount: number

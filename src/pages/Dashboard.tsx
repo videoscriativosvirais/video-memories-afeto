@@ -87,7 +87,18 @@ const Dashboard: React.FC = () => {
       }
       
       if (data && data.length > 0) {
-        setMemories(data as Memory[]);
+        // Transformar os dados do banco para o formato Memory
+        const formattedData: Memory[] = data.map(item => ({
+          id: item.id,
+          title: item.title,
+          date: item.date,
+          emoji: item.emoji,
+          thumbnail: item.thumbnail,
+          spotify_link: item.spotify_link,
+          text: item.text,
+          photos: null // Inicialmente não temos as fotos carregadas
+        }));
+        setMemories(formattedData);
       } else {
         setMemories([]);
       }
@@ -110,25 +121,26 @@ const Dashboard: React.FC = () => {
     try {
       // Buscar as fotos da memória se ainda não tiverem sido carregadas
       if (!memory.photos || memory.photos.length === 0) {
-        const { data, error } = await supabase
+        const { data: photosData, error: photosError } = await supabase
           .from('memory_photos')
-          .select('photo_url')
+          .select('photo_url, order')
           .eq('memory_id', memoryId)
           .order('order', { ascending: true });
           
-        if (error) {
-          console.error('Erro ao buscar fotos da memória:', error);
+        if (photosError) {
+          console.error('Erro ao buscar fotos da memória:', photosError);
           return;
         }
         
-        if (data && data.length > 0) {
-          const photos = data.map(item => item.photo_url);
+        if (photosData && photosData.length > 0) {
+          const photos = photosData.map(item => item.photo_url);
           // Atualizar a memória com as fotos
           memory.photos = photos;
           // Atualizar no estado local
           setMemories(prevMemories => 
             prevMemories.map(m => m.id === memoryId ? {...m, photos} : m)
           );
+          setSelectedMemory({...memory, photos});
         }
       }
       
