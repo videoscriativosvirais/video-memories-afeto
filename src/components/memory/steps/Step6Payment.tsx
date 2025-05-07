@@ -2,22 +2,55 @@
 import React, { useState } from 'react';
 import { useMemory } from '@/contexts/MemoryContext';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Check, ArrowRight, Heart } from 'lucide-react';
+import { CreditCard, Check, ArrowRight, Heart, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Step6Payment: React.FC = () => {
   const { memory, prevStep } = useMemory();
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handlePayment = async () => {
     setIsProcessing(true);
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsProcessing(false);
     
-    // Navigate to dashboard on successful payment
-    navigate('/dashboard');
+    try {
+      // Chamar a função de borda para criar uma sessão de checkout do Stripe
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: { 
+          memoryTitle: memory.title,
+          memoryId: memory.id || 'new' 
+        }
+      });
+
+      if (error) {
+        console.error('Erro ao processar pagamento:', error);
+        toast({
+          title: "Erro",
+          description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
+          variant: "destructive"
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Redirecionar para a página de checkout do Stripe
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('URL de checkout não retornada');
+      }
+    } catch (error) {
+      console.error('Erro ao processar pagamento:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
+        variant: "destructive"
+      });
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -91,7 +124,7 @@ const Step6Payment: React.FC = () => {
             {isProcessing ? (
               <React.Fragment>
                 Processando...
-                <div className="ml-2 animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
               </React.Fragment>
             ) : (
               <React.Fragment>
