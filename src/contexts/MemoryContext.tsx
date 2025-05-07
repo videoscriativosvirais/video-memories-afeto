@@ -131,12 +131,16 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const generateVideo = async () => {
     setIsProcessing(true);
-    // In a real application, this would be an API call to generate the video
+    // Em uma aplicação real, isto seria uma chamada para uma API gerar o vídeo
     await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Em vez de usar uma URL fixa de vídeo, vamos usar um marcador para indicar
+    // que o "vídeo" foi gerado e deve exibir nossas fotos em sequência
     setMemory(prev => ({
       ...prev,
-      videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      videoUrl: 'generated', // Usamos este marcador para indicar que devemos mostrar a apresentação de slides
     }));
+    
     setIsProcessing(false);
     return Promise.resolve();
   };

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useMemory } from '@/contexts/MemoryContext';
 import { Button } from '@/components/ui/button';
 import { Video, Check, Loader2 } from 'lucide-react';
@@ -9,6 +9,9 @@ const Step4VideoGeneration: React.FC = () => {
   const { memory, generateVideo, nextStep, prevStep, isProcessing } = useMemory();
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -39,6 +42,23 @@ const Step4VideoGeneration: React.FC = () => {
       };
     }
   }, [progress, isComplete]);
+
+  // Para simular a troca de fotos no vídeo "gerado"
+  useEffect(() => {
+    let slideTimer: NodeJS.Timeout;
+    
+    if (memory.videoUrl && memory.photoUrls.length > 0) {
+      slideTimer = setInterval(() => {
+        setCurrentPhotoIndex((prevIndex) => 
+          prevIndex === memory.photoUrls.length - 1 ? 0 : prevIndex + 1
+        );
+      }, 3000); // Troca a foto a cada 3 segundos
+    }
+    
+    return () => {
+      clearInterval(slideTimer);
+    };
+  }, [memory.videoUrl, memory.photoUrls.length]);
 
   const handleGenerateVideo = async () => {
     setProgress(0);
@@ -91,17 +111,30 @@ const Step4VideoGeneration: React.FC = () => {
         
         {memory.videoUrl ? (
           <div className="aspect-video rounded-lg overflow-hidden bg-black mb-6 relative">
-            <video 
-              className="w-full h-full object-contain"
-              controls
-              autoPlay
-              muted
-              loop
-              playsInline
-            >
-              <source src={memory.videoUrl} type="video/mp4" />
-              Seu navegador não suporta vídeos HTML5.
-            </video>
+            {memory.photoUrls.length > 0 ? (
+              <div className="relative w-full h-full">
+                <img 
+                  src={memory.photoUrls[currentPhotoIndex]} 
+                  alt={`Foto da memória ${currentPhotoIndex + 1}`}
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white p-4">
+                  <p className="text-xl mb-2">{memory.title}</p>
+                  <p className="text-sm mb-2">{memory.text.substring(0, 100)}...</p>
+                  <div className="flex items-center justify-between">
+                    <span>{memory.emoji}</span>
+                    <span className="text-xs">{memory.date?.toLocaleDateString('pt-BR')}</span>
+                  </div>
+                </div>
+                <div className="absolute top-2 right-2 bg-white bg-opacity-80 px-2 py-1 rounded-md text-xs">
+                  {currentPhotoIndex + 1}/{memory.photoUrls.length}
+                </div>
+              </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-white">
+                <p>Nenhuma foto foi adicionada para gerar o vídeo</p>
+              </div>
+            )}
           </div>
         ) : (
           !isProcessing && (
