@@ -41,7 +41,7 @@ const Login: React.FC = () => {
       
       toast.success('Login realizado com sucesso!');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no login:', error);
       toast.error(error.message || 'Email ou senha inválidos');
     } finally {
@@ -64,7 +64,7 @@ const Login: React.FC = () => {
       if (error) throw error;
       
       // O redirecionamento será feito automaticamente pelo Supabase
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no login com Google:', error);
       toast.error('Erro ao fazer login com Google. Tente novamente.');
       setIsGoogleLoading(false);

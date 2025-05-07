@@ -9,6 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      memories: {
+        Row: {
+          created_at: string | null
+          date: string | null
+          emoji: string | null
+          id: string
+          is_paid: boolean | null
+          qr_code_url: string | null
+          spotify_link: string | null
+          text: string | null
+          thumbnail: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string | null
+          emoji?: string | null
+          id?: string
+          is_paid?: boolean | null
+          qr_code_url?: string | null
+          spotify_link?: string | null
+          text?: string | null
+          thumbnail?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string | null
+          emoji?: string | null
+          id?: string
+          is_paid?: boolean | null
+          qr_code_url?: string | null
+          spotify_link?: string | null
+          text?: string | null
+          thumbnail?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          memory_title: string
+          status: string | null
+          stripe_session_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          memory_title: string
+          status?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          memory_title?: string
+          status?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

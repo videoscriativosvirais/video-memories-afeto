@@ -6,14 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Heart, Plus, Calendar, Music, Video, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 
 interface Memory {
   id: string;
   title: string;
-  date: Date;
-  emoji: string;
-  thumbnail: string;
-  spotifyLink?: string;
+  date: string | null;
+  emoji: string | null;
+  thumbnail: string | null;
+  spotify_link: string | null;
 }
 
 const Dashboard: React.FC = () => {
@@ -39,49 +40,54 @@ const Dashboard: React.FC = () => {
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('success') === 'true') {
       toast.success('Memória salva com sucesso!');
+      // Verificar se há um memoryId para atualizar o status de pagamento
+      const memoryId = searchParams.get('memory_id');
+      if (memoryId && memoryId !== "new") {
+        updateMemoryPaymentStatus(memoryId);
+      }
     }
   }, [navigate, location]);
+
+  // Função para atualizar o status de pagamento da memória
+  const updateMemoryPaymentStatus = async (memoryId: string) => {
+    try {
+      const { error } = await supabase
+        .from('memories')
+        .update({ is_paid: true })
+        .eq('id', memoryId);
+
+      if (error) {
+        console.error('Erro ao atualizar status de pagamento:', error);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status de pagamento:', error);
+    }
+  };
 
   const loadMemories = async () => {
     setLoading(true);
     
     try {
-      // TODO: Substituir este mock por uma consulta real ao banco de dados
-      // Em um cenário real, você faria uma consulta ao Supabase
-      // const { data, error } = await supabase.from('memories').select('*').eq('user_id', userId);
+      // Buscar memórias do usuário no Supabase
+      const { data, error } = await supabase
+        .from('memories')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      // Por enquanto, usamos dados mockados
-      const mockMemories = [
-        {
-          id: 'mem-1',
-          title: 'Nosso primeiro encontro',
-          date: new Date('2023-02-14'),
-          emoji: '❤️',
-          thumbnail: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80',
-          spotifyLink: 'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT',
-        },
-        {
-          id: 'mem-2',
-          title: 'Aniversário de 5 anos',
-          date: new Date('2022-10-22'),
-          emoji: '🎂',
-          thumbnail: 'https://images.unsplash.com/photo-1558636508-e0db3814bd1d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80',
-          spotifyLink: 'https://open.spotify.com/track/7iL6o9tox1zgHpKUfh9vuC',
-        },
-        {
-          id: 'mem-3',
-          title: 'Viagem para a praia',
-          date: new Date('2022-07-08'),
-          emoji: '🌴',
-          thumbnail: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80',
-          spotifyLink: 'https://open.spotify.com/track/6fWoFduMpBym4QcCY5c9xx',
-        },
-      ];
-      
-      setTimeout(() => {
-        setMemories(mockMemories);
+      if (error) {
+        console.error('Erro ao buscar memórias:', error);
+        toast.error('Erro ao carregar suas memórias');
         setLoading(false);
-      }, 1000);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        setMemories(data as Memory[]);
+      } else {
+        setMemories([]);
+      }
+      
+      setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar memórias:', error);
       toast.error('Erro ao carregar suas memórias');
@@ -135,12 +141,12 @@ const Dashboard: React.FC = () => {
               <div key={memory.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-100">
                 <div className="aspect-video relative overflow-hidden">
                   <img 
-                    src={memory.thumbnail} 
+                    src={memory.thumbnail || 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80'} 
                     alt={memory.title} 
                     className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
                   />
                   <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-full py-1 px-3 text-lg">
-                    {memory.emoji}
+                    {memory.emoji || '❤️'}
                   </div>
                 </div>
                 
@@ -151,8 +157,8 @@ const Dashboard: React.FC = () => {
                   
                   <div className="flex items-center text-gray-600 text-sm mb-4">
                     <Calendar className="h-4 w-4 mr-1" />
-                    <span>{memory.date.toLocaleDateString('pt-BR')}</span>
-                    {memory.spotifyLink && (
+                    <span>{memory.date ? new Date(memory.date).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                    {memory.spotify_link && (
                       <>
                         <Music className="h-4 w-4 ml-3 mr-1" />
                         <span>Spotify</span>

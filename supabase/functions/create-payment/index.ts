@@ -59,12 +59,12 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/dashboard?success=true&memory_id=${memoryId || ""}`,
+      success_url: `${req.headers.get("origin")}/dashboard?success=true&memory_id=${memoryId}`,
       cancel_url: `${req.headers.get("origin")}/criar-memoria?step=6&canceled=true`,
       metadata: {
         user_id: userData.user.id,
         memory_title: memoryTitle,
-        memory_id: memoryId || ""
+        memory_id: memoryId
       }
     });
 

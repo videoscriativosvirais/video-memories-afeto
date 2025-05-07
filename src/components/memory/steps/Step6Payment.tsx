@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Step6Payment: React.FC = () => {
-  const { memory, prevStep } = useMemory();
+  const { memory, prevStep, saveMemory } = useMemory();
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -17,11 +17,29 @@ const Step6Payment: React.FC = () => {
     setIsProcessing(true);
     
     try {
+      // Primeiro, salvar a memória no Supabase para obter um ID
+      if (!memory.id) {
+        await saveMemory();
+      }
+      
+      // Buscar a memória salva para ter certeza de que temos seu ID
+      const { data: memoryData } = await supabase
+        .from('memories')
+        .select('id')
+        .eq('title', memory.title)
+        .maybeSingle();
+      
+      const memoryId = memoryData?.id || memory.id;
+      
+      if (!memoryId) {
+        throw new Error('Não foi possível salvar a memória');
+      }
+      
       // Chamar a função de borda para criar uma sessão de checkout do Stripe
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: { 
           memoryTitle: memory.title,
-          memoryId: memory.id || 'new' 
+          memoryId: memoryId 
         }
       });
 

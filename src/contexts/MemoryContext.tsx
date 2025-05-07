@@ -1,5 +1,6 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define the shape of a memory
 export interface Memory {
@@ -114,19 +115,68 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setCurrentStep(1);
   };
 
-  // Mock API calls
+  // Save memory to Supabase
   const saveMemory = async () => {
     setIsProcessing(true);
-    // In a real application, this would be an API call to save the memory
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setMemory(prev => ({
-      ...prev,
-      id: `memory-${Date.now()}`,
-      createdAt: new Date(),
-      userId: 'user-123', // This would be the actual user ID in a real app
-    }));
-    setIsProcessing(false);
-    return Promise.resolve();
+    
+    try {
+      // Check if user is authenticated
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        throw new Error('Usuário não autenticado');
+      }
+      
+      // Format memory data for database
+      const memoryData = {
+        title: memory.title,
+        text: memory.text,
+        date: memory.date ? memory.date.toISOString().split('T')[0] : null,
+        emoji: memory.emoji,
+        spotify_link: memory.spotifyLink,
+        user_id: sessionData.session.user.id,
+        is_paid: false
+      };
+      
+      // Save or update memory
+      let result;
+      if (memory.id) {
+        // Update existing memory
+        result = await supabase
+          .from('memories')
+          .update(memoryData)
+          .eq('id', memory.id)
+          .select('id')
+          .single();
+      } else {
+        // Create new memory
+        result = await supabase
+          .from('memories')
+          .insert(memoryData)
+          .select('id')
+          .single();
+      }
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      // Update memory state with ID
+      setMemory(prev => ({
+        ...prev,
+        id: result.data.id,
+        userId: sessionData.session?.user.id
+      }));
+      
+      // Upload photos
+      // Note: In a real app, you would upload photos to Supabase storage
+      // and save references in the database
+    } catch (error) {
+      console.error('Erro ao salvar memória:', error);
+      throw error;
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const generateVideo = async () => {

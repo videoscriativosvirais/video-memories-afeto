@@ -18,7 +18,7 @@ interface Purchase {
   id: string;
   memory_title: string;
   amount: number;
-  purchase_date: string;
+  created_at: string;
   status: string;
 }
 
@@ -51,26 +51,18 @@ const Profile: React.FC = () => {
             created_at: new Date(userData.user.created_at).toLocaleDateString('pt-BR')
           });
           
-          // Buscar compras do usuário (mock por enquanto)
-          // Em um cenário real, isso viria do banco de dados Supabase
-          const mockPurchases = [
-            {
-              id: '1',
-              memory_title: 'Nosso primeiro encontro',
-              amount: 1990,
-              purchase_date: new Date().toLocaleDateString('pt-BR'),
-              status: 'Concluído'
-            },
-            {
-              id: '2',
-              memory_title: 'Aniversário de 5 anos',
-              amount: 1990,
-              purchase_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR'),
-              status: 'Concluído'
-            }
-          ];
+          // Buscar compras do usuário do Supabase
+          const { data: purchasesData, error: purchasesError } = await supabase
+            .from('purchases')
+            .select('*')
+            .order('created_at', { ascending: false });
           
-          setPurchases(mockPurchases);
+          if (purchasesError) {
+            console.error('Erro ao buscar compras:', purchasesError);
+            toast.error('Erro ao carregar histórico de compras');
+          } else if (purchasesData) {
+            setPurchases(purchasesData as Purchase[]);
+          }
         }
       } catch (error) {
         console.error('Erro ao carregar perfil:', error);
@@ -91,6 +83,30 @@ const Profile: React.FC = () => {
     } catch (error) {
       console.error('Erro ao sair:', error);
       toast.error('Erro ao sair da conta');
+    }
+  };
+
+  const formatPurchaseDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'pendente': return 'Pendente';
+      case 'pago': 
+      case 'concluído': return 'Concluído';
+      case 'cancelado': return 'Cancelado';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const getStatusClass = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pendente': return 'bg-yellow-100 text-yellow-700';
+      case 'pago': 
+      case 'concluído': return 'bg-green-100 text-green-700';
+      case 'cancelado': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -184,12 +200,12 @@ const Profile: React.FC = () => {
                           <h3 className="font-medium text-memory-700">
                             {purchase.memory_title}
                           </h3>
-                          <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
-                            {purchase.status}
+                          <span className={`text-sm px-2 py-1 rounded ${getStatusClass(purchase.status)}`}>
+                            {formatStatus(purchase.status)}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm text-gray-500">
-                          <span>Data: {purchase.purchase_date}</span>
+                          <span>Data: {formatPurchaseDate(purchase.created_at)}</span>
                           <span>Valor: R$ {(purchase.amount / 100).toFixed(2)}</span>
                         </div>
                       </div>
