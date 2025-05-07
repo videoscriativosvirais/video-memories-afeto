@@ -121,6 +121,8 @@ const Dashboard: React.FC = () => {
     try {
       // Buscar as fotos da memória se ainda não tiverem sido carregadas
       if (!memory.photos || memory.photos.length === 0) {
+        console.log('Buscando fotos para a memória:', memoryId);
+        
         const { data: photosData, error: photosError } = await supabase
           .from('memory_photos')
           .select('photo_url, order')
@@ -129,18 +131,29 @@ const Dashboard: React.FC = () => {
           
         if (photosError) {
           console.error('Erro ao buscar fotos da memória:', photosError);
+          toast.error('Erro ao carregar fotos da memória');
           return;
         }
         
         if (photosData && photosData.length > 0) {
+          console.log('Fotos encontradas:', photosData.length);
           const photos = photosData.map(item => item.photo_url);
+          
           // Atualizar a memória com as fotos
           memory.photos = photos;
+          
           // Atualizar no estado local
           setMemories(prevMemories => 
             prevMemories.map(m => m.id === memoryId ? {...m, photos} : m)
           );
+          
+          // Atualizar a memória selecionada
           setSelectedMemory({...memory, photos});
+        } else {
+          console.log('Nenhuma foto encontrada para esta memória');
+          // Garantir que photos seja um array vazio e não null
+          memory.photos = [];
+          setSelectedMemory({...memory, photos: []});
         }
       }
       

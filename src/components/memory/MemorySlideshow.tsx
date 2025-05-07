@@ -20,11 +20,18 @@ const MemorySlideshow: React.FC<MemorySlideshowProps> = ({ memory }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState<boolean[]>([]);
   const [isAnyImageLoaded, setIsAnyImageLoaded] = useState(false);
-
+  
+  // Inicializa o estado de carregamento das imagens
   useEffect(() => {
-    // Inicializa o estado de carregamento das imagens
     if (memory.photos && memory.photos.length > 0) {
       setImagesLoaded(Array(memory.photos.length).fill(false));
+      // Pré-carrega as imagens para melhorar a experiência
+      memory.photos.forEach((url, index) => {
+        const img = new Image();
+        img.src = url;
+        img.onload = () => handleImageLoad(index);
+        img.onerror = () => handleImageError(index);
+      });
     }
   }, [memory.photos]);
 
@@ -49,7 +56,7 @@ const MemorySlideshow: React.FC<MemorySlideshowProps> = ({ memory }) => {
   useEffect(() => {
     let slideTimer: NodeJS.Timeout;
     
-    if (memory.photos?.length && !isPaused) {
+    if (memory.photos?.length && memory.photos.length > 0 && !isPaused) {
       slideTimer = setInterval(() => {
         setCurrentPhotoIndex((prevIndex) => 
           prevIndex === (memory.photos?.length || 1) - 1 ? 0 : prevIndex + 1
