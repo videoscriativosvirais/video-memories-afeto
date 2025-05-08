@@ -40,15 +40,21 @@ const Dashboard: React.FC = () => {
     };
 
     checkAuth();
-    
+
     // Verificar se o usuário acabou de concluir uma compra
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('success') === 'true') {
       toast.success('Memória salva com sucesso!');
+
       // Verificar se há um memoryId para atualizar o status de pagamento
       const memoryId = searchParams.get('memory_id');
       if (memoryId && memoryId !== "new") {
+        console.log('Atualizando status de pagamento para memória:', memoryId);
         updateMemoryPaymentStatus(memoryId);
+
+        // Limpar os parâmetros da URL para evitar atualizações duplicadas em refresh
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
       }
     }
   }, [navigate, location]);
@@ -56,6 +62,35 @@ const Dashboard: React.FC = () => {
   // Função para atualizar o status de pagamento da memória
   const updateMemoryPaymentStatus = async (memoryId: string) => {
     try {
+      console.log('Iniciando atualização de status de pagamento para memória:', memoryId);
+
+      // Verificar se a memória existe e se já está marcada como paga
+      const { data: memoryData, error: checkError } = await supabase
+        .from('memories')
+        .select('id, is_paid')
+        .eq('id', memoryId)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Erro ao verificar memória:', checkError);
+        toast.error('Erro ao verificar status da memória');
+        return;
+      }
+
+      if (!memoryData) {
+        console.error('Memória não encontrada:', memoryId);
+        toast.error('Memória não encontrada');
+        return;
+      }
+
+      console.log('Memória encontrada:', memoryData);
+
+      if (memoryData.is_paid) {
+        console.log('Memória já está marcada como paga:', memoryId);
+        return;
+      }
+
+      // Atualizar a memória para is_paid = true
       const { error } = await supabase
         .from('memories')
         .update({ is_paid: true })
@@ -63,29 +98,46 @@ const Dashboard: React.FC = () => {
 
       if (error) {
         console.error('Erro ao atualizar status de pagamento:', error);
+        toast.error('Erro ao atualizar status de pagamento');
+      } else {
+        console.log('Status de pagamento atualizado com sucesso para memória:', memoryId);
+
+        // Também atualizar o status da compra relacionada
+        const { error: purchaseError } = await supabase
+          .from('purchases')
+          .update({ status: 'pago' })
+          .eq('memory_title', memoryData.title);
+
+        if (purchaseError) {
+          console.error('Erro ao atualizar status da compra:', purchaseError);
+        }
+
+        // Recarregar as memórias para mostrar as atualizações
+        loadMemories();
       }
     } catch (error) {
       console.error('Erro ao atualizar status de pagamento:', error);
+      toast.error('Erro ao processar pagamento');
     }
   };
 
   const loadMemories = async () => {
     setLoading(true);
-    
+
     try {
       // Buscar memórias do usuário no Supabase
       const { data, error } = await supabase
         .from('memories')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) {
         console.error('Erro ao buscar memórias:', error);
         toast.error('Erro ao carregar suas memórias');
         setLoading(false);
         return;
       }
-      
+
       if (data && data.length > 0) {
         // Transformar os dados do banco para o formato Memory
         const formattedData: Memory[] = data.map(item => ({
@@ -102,7 +154,7 @@ const Dashboard: React.FC = () => {
       } else {
         setMemories([]);
       }
-      
+
       setLoading(false);
     } catch (error) {
       console.error('Erro ao carregar memórias:', error);
@@ -110,43 +162,43 @@ const Dashboard: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleViewVideo = async (memoryId: string) => {
     // Encontrar a memória selecionada
     const memory = memories.find(m => m.id === memoryId);
     if (!memory) return;
-    
+
     setSelectedMemory(memory);
-    
+
     try {
       // Buscar as fotos da memória se ainda não tiverem sido carregadas
       if (!memory.photos || memory.photos.length === 0) {
         console.log('Buscando fotos para a memória:', memoryId);
-        
+
         const { data: photosData, error: photosError } = await supabase
           .from('memory_photos')
           .select('photo_url, order')
           .eq('memory_id', memoryId)
           .order('order', { ascending: true });
-          
+
         if (photosError) {
           console.error('Erro ao buscar fotos da memória:', photosError);
           toast.error('Erro ao carregar fotos da memória');
           return;
         }
-        
+
         if (photosData && photosData.length > 0) {
           console.log('Fotos encontradas:', photosData.length);
           const photos = photosData.map(item => item.photo_url);
-          
+
           // Atualizar a memória com as fotos
           memory.photos = photos;
-          
+
           // Atualizar no estado local
-          setMemories(prevMemories => 
+          setMemories(prevMemories =>
             prevMemories.map(m => m.id === memoryId ? {...m, photos} : m)
           );
-          
+
           // Atualizar a memória selecionada
           setSelectedMemory({...memory, photos});
         } else {
@@ -156,7 +208,7 @@ const Dashboard: React.FC = () => {
           setSelectedMemory({...memory, photos: []});
         }
       }
-      
+
       // Abrir o modal
       setOpenMemoryId(memoryId);
     } catch (error) {
@@ -169,7 +221,7 @@ const Dashboard: React.FC = () => {
     setOpenMemoryId(null);
     setSelectedMemory(null);
   };
-  
+
   return (
     <Layout>
       <div className="page-container">
@@ -182,7 +234,7 @@ const Dashboard: React.FC = () => {
               Suas memórias afetivas salvas e compartilhadas
             </p>
           </div>
-          
+
           <Link to="/criar-memoria">
             <Button className="memory-button-primary flex items-center gap-2">
               <Plus className="h-5 w-5" />
@@ -190,7 +242,7 @@ const Dashboard: React.FC = () => {
             </Button>
           </Link>
         </div>
-        
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="h-8 w-8 text-memory-500 animate-spin mb-4" />
@@ -210,26 +262,26 @@ const Dashboard: React.FC = () => {
                 </p>
               </div>
             </Link>
-            
+
             {/* Memory Cards */}
             {memories.map((memory) => (
               <div key={memory.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-100">
                 <div className="aspect-video relative overflow-hidden">
-                  <img 
-                    src={memory.thumbnail || 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80'} 
-                    alt={memory.title} 
+                  <img
+                    src={memory.thumbnail || 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80'}
+                    alt={memory.title}
                     className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
                   />
                   <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-full py-1 px-3 text-lg">
                     {memory.emoji || '❤️'}
                   </div>
                 </div>
-                
+
                 <div className="p-5">
                   <h3 className="text-xl font-serif font-medium text-memory-700 mb-2">
                     {memory.title}
                   </h3>
-                  
+
                   <div className="flex items-center text-gray-600 text-sm mb-4">
                     <Calendar className="h-4 w-4 mr-1" />
                     <span>{memory.date ? new Date(memory.date).toLocaleDateString('pt-BR') : 'Sem data'}</span>
@@ -240,10 +292,10 @@ const Dashboard: React.FC = () => {
                       </>
                     )}
                   </div>
-                  
+
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       className="text-memory-600 border-memory-200"
                       onClick={() => handleViewVideo(memory.id)}
@@ -251,7 +303,7 @@ const Dashboard: React.FC = () => {
                       <Video className="h-4 w-4 mr-2" />
                       Ver vídeo
                     </Button>
-                    
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -270,7 +322,7 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
         )}
-        
+
         {!loading && memories.length === 0 && (
           <div className="bg-memory-50 rounded-lg border border-memory-100 p-8 text-center">
             <Heart className="h-12 w-12 text-memory-300 mx-auto mb-4" />
@@ -287,7 +339,7 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       {/* Dialog para exibir o slideshow/vídeo da memória */}
       <Dialog open={openMemoryId !== null} onOpenChange={closeDialog}>
         <DialogContent className="max-w-4xl w-full">
@@ -297,8 +349,8 @@ const Dashboard: React.FC = () => {
             </DialogTitle>
           </DialogHeader>
           {selectedMemory && (
-            <MemorySlideshow 
-              memory={selectedMemory} 
+            <MemorySlideshow
+              memory={selectedMemory}
             />
           )}
         </DialogContent>

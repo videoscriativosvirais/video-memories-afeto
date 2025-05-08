@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Webhook Stripe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #6772e5;
+        }
+        .card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background-color: #6772e5;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #5469d4;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste de Webhook Stripe</h1>
+    
+    <div class="card">
+        <h2>Instruções</h2>
+        <p>Esta página permite testar o webhook do Stripe enviando um evento simulado para o endpoint configurado.</p>
+        <p>Isso ajuda a verificar se o webhook está recebendo e processando corretamente os eventos do Stripe.</p>
+    </div>
+    
+    <div class="card">
+        <h2>Configuração do Webhook</h2>
+        <p>URL do Webhook:</p>
+        <input type="text" id="webhookUrl" placeholder="https://bsribrdwyvrhzagoqxvr.supabase.co/functions/v1/webhook-stripe" value="https://bsribrdwyvrhzagoqxvr.supabase.co/functions/v1/webhook-stripe">
+        
+        <p>Evento de Teste:</p>
+        <textarea id="eventData" rows="10">
+{
+  "id": "evt_test_webhook",
+  "object": "event",
+  "api_version": "2023-10-16",
+  "created": 1619116749,
+  "type": "checkout.session.completed",
+  "data": {
+    "object": {
+      "id": "cs_test_webhook",
+      "object": "checkout.session",
+      "payment_status": "paid",
+      "metadata": {
+        "user_id": "seu-user-id-aqui",
+        "memory_id": "seu-memory-id-aqui",
+        "memory_title": "Título da Memória de Teste"
+      }
+    }
+  }
+}
+</textarea>
+    </div>
+    
+    <div class="card">
+        <h2>Enviar Teste</h2>
+        <button id="sendTest">Enviar Evento de Teste</button>
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Dicas para Solução de Problemas</h2>
+        <ul>
+            <li>Verifique se o webhook está corretamente configurado no painel do Stripe</li>
+            <li>Confirme que o segredo do webhook está configurado nas variáveis de ambiente</li>
+            <li>Verifique os logs da função para identificar possíveis erros</li>
+            <li>Certifique-se de que a função tem permissões para acessar o banco de dados</li>
+        </ul>
+    </div>
+
+    <script>
+        document.getElementById('sendTest').addEventListener('click', async () => {
+            const webhookUrl = document.getElementById('webhookUrl').value;
+            const eventData = document.getElementById('eventData').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = 'result';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Enviando evento de teste...';
+            
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'stripe-signature': 'test_signature'
+                    },
+                    body: eventData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `<h3>Sucesso!</h3><p>O webhook respondeu com status ${response.status}</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h3>Erro!</h3><p>O webhook respondeu com status ${response.status}</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h3>Erro!</h3><p>${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

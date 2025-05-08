@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, Settings, CreditCard, Book, ChevronDown, 
+import {
+  Users, Settings, CreditCard, Book, ChevronDown,
   Search, Filter, MoreVertical, Edit, Trash, Eye, PlusCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdmin } from '@/hooks/useAdmin';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { formatDateWithTime, formatDate } from '@/lib/date-utils';
 import { toast } from 'sonner';
 
 // Mock user data
@@ -50,7 +51,7 @@ const AdminHeader: React.FC = () => (
       <h1 className="text-3xl font-bold">Painel Administrativo</h1>
       <p className="text-gray-500">Gerencie usuários, pagamentos e configurações</p>
     </div>
-    
+
     <div className="flex items-center gap-3">
       <div className="relative">
         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -62,7 +63,7 @@ const AdminHeader: React.FC = () => (
           className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-memory-500"
         />
       </div>
-      
+
       <Button variant="outline" className="gap-2">
         <Filter className="h-4 w-4" />
         Filtros
@@ -71,9 +72,9 @@ const AdminHeader: React.FC = () => (
   </div>
 );
 
-const AdminSidebar: React.FC<{ activeTab: string; setActiveTab: (tab: string) => void }> = ({ 
-  activeTab, 
-  setActiveTab 
+const AdminSidebar: React.FC<{ activeTab: string; setActiveTab: (tab: string) => void }> = ({
+  activeTab,
+  setActiveTab
 }) => (
   <div className="w-full md:w-64 bg-white rounded-lg border p-4 mb-6 md:mb-0 md:mr-6">
     <div className="space-y-1">
@@ -85,7 +86,7 @@ const AdminSidebar: React.FC<{ activeTab: string; setActiveTab: (tab: string) =>
         <Book className="h-5 w-5 mr-2" />
         Dashboard
       </Button>
-      
+
       <Button
         variant={activeTab === 'users' ? 'default' : 'ghost'}
         className={`w-full justify-start ${activeTab === 'users' ? 'bg-memory-500' : ''}`}
@@ -94,7 +95,7 @@ const AdminSidebar: React.FC<{ activeTab: string; setActiveTab: (tab: string) =>
         <Users className="h-5 w-5 mr-2" />
         Usuários
       </Button>
-      
+
       <Button
         variant={activeTab === 'memories' ? 'default' : 'ghost'}
         className={`w-full justify-start ${activeTab === 'memories' ? 'bg-memory-500' : ''}`}
@@ -103,7 +104,7 @@ const AdminSidebar: React.FC<{ activeTab: string; setActiveTab: (tab: string) =>
         <Book className="h-5 w-5 mr-2" />
         Memórias
       </Button>
-      
+
       <Button
         variant={activeTab === 'payments' ? 'default' : 'ghost'}
         className={`w-full justify-start ${activeTab === 'payments' ? 'bg-memory-500' : ''}`}
@@ -112,7 +113,7 @@ const AdminSidebar: React.FC<{ activeTab: string; setActiveTab: (tab: string) =>
         <CreditCard className="h-5 w-5 mr-2" />
         Pagamentos
       </Button>
-      
+
       <Button
         variant={activeTab === 'settings' ? 'default' : 'ghost'}
         className={`w-full justify-start ${activeTab === 'settings' ? 'bg-memory-500' : ''}`}
@@ -122,7 +123,7 @@ const AdminSidebar: React.FC<{ activeTab: string; setActiveTab: (tab: string) =>
         Configurações
       </Button>
     </div>
-    
+
     <div className="pt-6 mt-6 border-t">
       <div className="flex items-center">
         <div className="w-8 h-8 bg-memory-200 rounded-full mr-2"></div>
@@ -160,7 +161,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         ))}
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg border p-6">
           <h3 className="font-medium mb-4">Memórias recentes</h3>
@@ -173,7 +174,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center">
                   <span className="mr-2 text-xl">{memory.emoji}</span>
-                  <span className="text-sm text-gray-500">{new Date(memory.createdAt).toLocaleDateString('pt-BR')}</span>
+                  <span className="text-sm text-gray-500">{formatDate(memory.createdAt)}</span>
                 </div>
               </div>
             ))}
@@ -182,7 +183,7 @@ const AdminDashboard: React.FC = () => {
             Ver todas as memórias
           </Button>
         </div>
-        
+
         <div className="bg-white rounded-lg border p-6">
           <h3 className="font-medium mb-4">Pagamentos recentes</h3>
           <div className="space-y-3">
@@ -190,7 +191,9 @@ const AdminDashboard: React.FC = () => {
               <div key={payment.id} className="flex items-center justify-between py-1 border-b">
                 <div>
                   <p className="font-medium">{payment.userName}</p>
-                  <p className="text-sm text-gray-500">{new Date(payment.date).toLocaleDateString('pt-BR')}</p>
+                  <p className="text-sm text-gray-500">
+                    {formatDateWithTime(payment.date)}
+                  </p>
                 </div>
                 <div>
                   <p className="font-medium">R$ {payment.amount.toFixed(2)}</p>
@@ -219,10 +222,10 @@ const AdminUsers: React.FC = () => {
       toast.error('Por favor, informe um email');
       return;
     }
-    
+
     setIsSubmitting(true);
     const success = await addAdmin(adminEmail);
-    
+
     if (success) {
       setAdminEmail('');
       setShowAddAdminDialog(false);
@@ -242,7 +245,7 @@ const AdminUsers: React.FC = () => {
         <Button>Novo Usuário</Button>
       </div>
     </div>
-    
+
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead className="bg-gray-50 text-left">
@@ -266,7 +269,7 @@ const AdminUsers: React.FC = () => {
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
               <td className="px-4 py-3 text-sm text-gray-600">{user.memories}</td>
-              <td className="px-4 py-3 text-sm text-gray-600">{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
+              <td className="px-4 py-3 text-sm text-gray-600">{formatDate(user.createdAt)}</td>
               <td className="px-4 py-3">
                 <span className={`px-2 py-1 text-xs rounded-full ${
                   user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -336,7 +339,7 @@ const AdminMemories: React.FC = () => (
     <div className="p-4 border-b flex justify-between items-center">
       <h3 className="font-medium">Memórias ({memories.length})</h3>
     </div>
-    
+
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead className="bg-gray-50 text-left">
@@ -354,7 +357,7 @@ const AdminMemories: React.FC = () => (
             <tr key={memory.id}>
               <td className="px-4 py-3 font-medium">{memory.title}</td>
               <td className="px-4 py-3 text-sm text-gray-600">{memory.userName}</td>
-              <td className="px-4 py-3 text-sm text-gray-600">{new Date(memory.createdAt).toLocaleDateString('pt-BR')}</td>
+              <td className="px-4 py-3 text-sm text-gray-600">{formatDateWithTime(memory.createdAt)}</td>
               <td className="px-4 py-3 text-sm text-gray-600">{memory.photos}</td>
               <td className="px-4 py-3 text-2xl">{memory.emoji}</td>
               <td className="px-4 py-3">
@@ -383,7 +386,7 @@ const AdminPayments: React.FC = () => (
     <div className="p-4 border-b flex justify-between items-center">
       <h3 className="font-medium">Pagamentos ({payments.length})</h3>
     </div>
-    
+
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead className="bg-gray-50 text-left">
@@ -402,7 +405,9 @@ const AdminPayments: React.FC = () => (
               <td className="px-4 py-3 text-sm font-medium">{payment.id}</td>
               <td className="px-4 py-3 text-sm text-gray-600">{payment.userName}</td>
               <td className="px-4 py-3 font-medium">R$ {payment.amount.toFixed(2)}</td>
-              <td className="px-4 py-3 text-sm text-gray-600">{new Date(payment.date).toLocaleDateString('pt-BR')}</td>
+              <td className="px-4 py-3 text-sm text-gray-600">
+                {formatDateWithTime(payment.date)}
+              </td>
               <td className="px-4 py-3">
                 <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
                   {payment.status}
@@ -429,7 +434,7 @@ const AdminPayments: React.FC = () => (
 const AdminSettings: React.FC = () => (
   <div className="bg-white rounded-lg border p-6">
     <h3 className="font-medium mb-6">Configurações do Site</h3>
-    
+
     <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -441,7 +446,7 @@ const AdminSettings: React.FC = () => (
           className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-memory-500"
         />
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Email de Contato
@@ -452,7 +457,7 @@ const AdminSettings: React.FC = () => (
           className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-memory-500"
         />
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Preço por Memória (R$)
@@ -464,7 +469,7 @@ const AdminSettings: React.FC = () => (
           className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-memory-500"
         />
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Número Máximo de Fotos
@@ -475,7 +480,7 @@ const AdminSettings: React.FC = () => (
           className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-memory-500"
         />
       </div>
-      
+
       <div className="flex items-center">
         <input
           type="checkbox"
@@ -486,7 +491,7 @@ const AdminSettings: React.FC = () => (
           Modo de Manutenção
         </label>
       </div>
-      
+
       <div className="pt-4">
         <Button className="memory-button-primary">
           Salvar Configurações
@@ -530,12 +535,12 @@ const Admin: React.FC = () => {
             <Button variant="outline">Sair</Button>
           </div>
         </div>
-        
+
         <AdminHeader />
-        
+
         <div className="flex flex-col md:flex-row">
           <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-          
+
           <div className="flex-1">
             {activeTab === 'dashboard' && <AdminDashboard />}
             {activeTab === 'users' && <AdminUsers />}

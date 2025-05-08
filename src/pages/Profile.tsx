@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { User, Settings, LogOut, Package } from 'lucide-react';
+import { formatDateWithTime } from '@/lib/date-utils';
 
 interface UserProfile {
   email: string;
@@ -31,32 +32,32 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const checkSession = async () => {
       setLoading(true);
-      
+
       try {
         // Verificar se o usuário está autenticado
         const { data: sessionData } = await supabase.auth.getSession();
-        
+
         if (!sessionData.session) {
           navigate('/login');
           return;
         }
-        
+
         // Obter dados do perfil
         const { data: userData } = await supabase.auth.getUser();
-        
+
         if (userData.user) {
           setProfile({
             email: userData.user.email || '',
             id: userData.user.id,
             created_at: new Date(userData.user.created_at).toLocaleDateString('pt-BR')
           });
-          
+
           // Buscar compras do usuário do Supabase
           const { data: purchasesData, error: purchasesError } = await supabase
             .from('purchases')
             .select('*')
             .order('created_at', { ascending: false });
-          
+
           if (purchasesError) {
             console.error('Erro ao buscar compras:', purchasesError);
             toast.error('Erro ao carregar histórico de compras');
@@ -71,7 +72,7 @@ const Profile: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     checkSession();
   }, [navigate]);
 
@@ -87,13 +88,13 @@ const Profile: React.FC = () => {
   };
 
   const formatPurchaseDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatDateWithTime(dateString);
   };
 
   const formatStatus = (status: string) => {
     switch (status) {
       case 'pendente': return 'Pendente';
-      case 'pago': 
+      case 'pago':
       case 'concluído': return 'Concluído';
       case 'cancelado': return 'Cancelado';
       default: return status.charAt(0).toUpperCase() + status.slice(1);
@@ -103,7 +104,7 @@ const Profile: React.FC = () => {
   const getStatusClass = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pendente': return 'bg-yellow-100 text-yellow-700';
-      case 'pago': 
+      case 'pago':
       case 'concluído': return 'bg-green-100 text-green-700';
       case 'cancelado': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
@@ -126,7 +127,7 @@ const Profile: React.FC = () => {
         <h1 className="text-3xl md:text-4xl font-serif font-medium text-memory-700 mb-8">
           Meu Perfil
         </h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Informações do Usuário */}
           <div className="md:col-span-1">
@@ -152,16 +153,16 @@ const Profile: React.FC = () => {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full flex items-center gap-2"
                   onClick={() => navigate('/dashboard')}
                 >
                   <Settings className="h-4 w-4" />
                   Minhas Memórias
                 </Button>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   className="w-full flex items-center gap-2"
                   onClick={handleLogout}
                 >
@@ -171,7 +172,7 @@ const Profile: React.FC = () => {
               </CardFooter>
             </Card>
           </div>
-          
+
           {/* Histórico de Compras */}
           <div className="md:col-span-2">
             <Card>
@@ -192,8 +193,8 @@ const Profile: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     {purchases.map((purchase) => (
-                      <div 
-                        key={purchase.id} 
+                      <div
+                        key={purchase.id}
                         className="border rounded-lg p-4 hover:border-memory-300 transition-colors"
                       >
                         <div className="flex justify-between mb-2">
@@ -204,9 +205,19 @@ const Profile: React.FC = () => {
                             {formatStatus(purchase.status)}
                           </span>
                         </div>
-                        <div className="flex justify-between text-sm text-gray-500">
-                          <span>Data: {formatPurchaseDate(purchase.created_at)}</span>
-                          <span>Valor: R$ {(purchase.amount / 100).toFixed(2)}</span>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2 text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-memory-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>{formatPurchaseDate(purchase.created_at)}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-memory-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Valor: R$ {(purchase.amount / 100).toFixed(2)}</span>
+                          </div>
                         </div>
                       </div>
                     ))}

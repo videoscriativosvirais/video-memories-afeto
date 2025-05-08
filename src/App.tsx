@@ -9,6 +9,7 @@ import CreateMemory from "./pages/CreateMemory";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
+import Cadastro from "./pages/Cadastro";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { useEffect, useState } from "react";
@@ -58,6 +59,7 @@ const App = () => {
             <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
             <Route path="/admin" element={<ProtectedRoute element={<Admin />} />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

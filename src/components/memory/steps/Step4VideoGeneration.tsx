@@ -13,7 +13,7 @@ const Step4VideoGeneration: React.FC = () => {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    
+
     if (isProcessing && progress < 100) {
       timer = setInterval(() => {
         setProgress((prev) => {
@@ -23,7 +23,7 @@ const Step4VideoGeneration: React.FC = () => {
         });
       }, 500);
     }
-    
+
     return () => {
       clearInterval(timer);
     };
@@ -34,7 +34,7 @@ const Step4VideoGeneration: React.FC = () => {
       const timer = setTimeout(() => {
         setIsComplete(true);
       }, 1000);
-      
+
       return () => {
         clearTimeout(timer);
       };
@@ -59,13 +59,28 @@ const Step4VideoGeneration: React.FC = () => {
     spotify_link: memory.spotifyLink
   };
 
+  // Log para depuração
+  useEffect(() => {
+    console.log("Dados formatados para o slideshow:", {
+      id: formattedMemory.id,
+      title: formattedMemory.title,
+      photosCount: formattedMemory.photos?.length || 0,
+      spotifyLink: formattedMemory.spotify_link,
+      emoji: formattedMemory.emoji
+    });
+
+    if (formattedMemory.photos && formattedMemory.photos.length > 0) {
+      console.log("Primeiras 3 URLs de fotos:", formattedMemory.photos.slice(0, 3));
+    }
+  }, [formattedMemory]);
+
   return (
     <div className="memory-step">
       <h2 className="text-2xl font-serif font-medium mb-6 text-memory-600">Criação do Slideshow</h2>
       <p className="text-gray-600 mb-6">
         Vamos criar um slideshow especial com suas fotos, texto e música. Este processo pode levar alguns momentos.
       </p>
-      
+
       <div className="bg-memory-50 rounded-lg p-6 border border-memory-200 text-center mb-8">
         <div className="w-20 h-20 mx-auto bg-memory-100 rounded-full flex items-center justify-center mb-4">
           {memory.videoUrl ? (
@@ -74,23 +89,23 @@ const Step4VideoGeneration: React.FC = () => {
             <Video className="h-8 w-8 text-memory-500" />
           )}
         </div>
-        
+
         <h3 className="text-lg font-medium text-memory-700 mb-2">
-          {memory.videoUrl 
-            ? "Slideshow gerado com sucesso!" 
-            : isProcessing 
-              ? "Criando seu slideshow de memória..." 
+          {memory.videoUrl
+            ? "Slideshow gerado com sucesso!"
+            : isProcessing
+              ? "Criando seu slideshow de memória..."
               : "Pronto para criar seu slideshow"}
         </h3>
-        
+
         <p className="text-gray-600 text-sm mb-4">
-          {memory.videoUrl 
-            ? "Seu slideshow está pronto para ser compartilhado." 
-            : isProcessing 
-              ? "Estamos combinando suas fotos, texto e música. Por favor, aguarde..." 
+          {memory.videoUrl
+            ? "Seu slideshow está pronto para ser compartilhado."
+            : isProcessing
+              ? "Estamos combinando suas fotos, texto e música. Por favor, aguarde..."
               : "Clique no botão abaixo para começar a geração do slideshow da sua memória."}
         </p>
-        
+
         {isProcessing && (
           <div className="mb-6">
             <div className="flex justify-between text-xs text-gray-500 mb-2">
@@ -100,7 +115,7 @@ const Step4VideoGeneration: React.FC = () => {
             <Progress value={progress} className="h-2" />
           </div>
         )}
-        
+
         {memory.videoUrl === 'generated' ? (
           <div className="mb-6 space-y-4 max-w-2xl mx-auto">
             <MemorySlideshow memory={formattedMemory} />
@@ -117,19 +132,19 @@ const Step4VideoGeneration: React.FC = () => {
           )
         )}
       </div>
-      
+
       <div className="flex justify-between pt-4">
-        <Button 
-          type="button" 
-          onClick={prevStep} 
+        <Button
+          type="button"
+          onClick={prevStep}
           className="memory-button-outline"
           disabled={isProcessing}
         >
           Voltar
         </Button>
-        <Button 
-          type="button" 
-          onClick={nextStep} 
+        <Button
+          type="button"
+          onClick={nextStep}
           className="memory-button-primary"
           disabled={!memory.videoUrl || isProcessing}
         >

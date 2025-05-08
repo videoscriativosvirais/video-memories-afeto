@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Common emojis for memory/emotional contexts
 const commonEmojis = [
-  '❤️', '😊', '🥰', '😍', '🎉', '✨', '🌟', '🎂', 
+  '❤️', '😊', '🥰', '😍', '🎉', '✨', '🌟', '🎂',
   '🎁', '🎈', '💫', '💕', '💞', '💓', '💖', '💝',
   '🌈', '🌸', '🌺', '🌷', '🏆', '🥇', '💯', '🙏',
   '👨‍👩‍👧', '👨‍👩‍👧‍👦', '👪', '👨‍👩‍👦', '👫', '👭', '👬', '🧸'
@@ -27,14 +27,25 @@ const Step3MusicEmoji: React.FC = () => {
       setSpotifyLink('');
       return;
     }
-    
+
+    console.log("Validando link do Spotify:", link);
+
     // Basic validation for Spotify link format
     const isSpotifyLink = link.includes('spotify.com') || link.includes('open.spotify');
-    
+
     if (isSpotifyLink) {
+      console.log("Link do Spotify válido");
       setLinkError(null);
       setSpotifyLink(link);
+
+      // Verificar se o link contém um ID de faixa
+      const hasTrackId = link.includes('/track/');
+      if (!hasTrackId) {
+        console.warn("Link do Spotify não contém ID de faixa");
+        setLinkError('O link deve ser de uma música específica (contendo /track/).');
+      }
     } else {
+      console.warn("Link do Spotify inválido");
       setLinkError('Por favor, insira um link válido do Spotify.');
     }
   };
@@ -45,7 +56,7 @@ const Step3MusicEmoji: React.FC = () => {
       <p className="text-gray-600 mb-6">
         Adicione uma música do Spotify que represente essa memória e escolha um emoji que expresse o sentimento dessa lembrança.
       </p>
-      
+
       <div className="space-y-8">
         {/* Spotify Link Section */}
         <div className="space-y-3">
@@ -65,25 +76,25 @@ const Step3MusicEmoji: React.FC = () => {
               placeholder="https://open.spotify.com/track/..."
             />
           </div>
-          
+
           {linkError && (
             <Alert variant="destructive" className="mt-2">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{linkError}</AlertDescription>
             </Alert>
           )}
-          
+
           <p className="text-sm text-gray-500">
             Vá até o Spotify, encontre a música desejada, clique nos três pontos e selecione "Compartilhar &gt; Copiar link".
           </p>
         </div>
-        
+
         {/* Emoji Selection Section */}
         <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">
             Escolha um emoji que represente essa memória
           </label>
-          
+
           <div className="emoji-picker">
             {commonEmojis.map((emoji) => (
               <div
@@ -95,7 +106,7 @@ const Step3MusicEmoji: React.FC = () => {
               </div>
             ))}
           </div>
-          
+
           {memory.emoji && (
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-700 mb-2">Emoji selecionado:</p>
@@ -104,18 +115,18 @@ const Step3MusicEmoji: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       <div className="flex justify-between pt-8">
-        <Button 
-          type="button" 
-          onClick={prevStep} 
+        <Button
+          type="button"
+          onClick={prevStep}
           className="memory-button-outline"
         >
           Voltar
         </Button>
-        <Button 
-          type="button" 
-          onClick={nextStep} 
+        <Button
+          type="button"
+          onClick={nextStep}
           className="memory-button-primary"
           disabled={!memory.emoji || !!linkError}
         >

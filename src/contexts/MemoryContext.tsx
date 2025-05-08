@@ -74,27 +74,34 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.log('Maximum of 10 photos reached');
       return;
     }
-    
-    // Create URL for preview
-    const photoUrl = URL.createObjectURL(photo);
-    
-    setMemory(prev => ({
-      ...prev,
-      photos: [...prev.photos, photo],
-      photoUrls: [...prev.photoUrls, photoUrl]
-    }));
+
+    try {
+      console.log(`Adicionando foto: ${photo.name}, tamanho: ${photo.size} bytes, tipo: ${photo.type}`);
+
+      // Create URL for preview
+      const photoUrl = URL.createObjectURL(photo);
+      console.log(`URL criada para a foto: ${photoUrl}`);
+
+      setMemory(prev => ({
+        ...prev,
+        photos: [...prev.photos, photo],
+        photoUrls: [...prev.photoUrls, photoUrl]
+      }));
+    } catch (error) {
+      console.error("Erro ao adicionar foto:", error);
+    }
   };
 
   const removePhoto = (index: number) => {
     const newPhotos = [...memory.photos];
     const newPhotoUrls = [...memory.photoUrls];
-    
+
     // Revoke object URL to avoid memory leaks
     URL.revokeObjectURL(newPhotoUrls[index]);
-    
+
     newPhotos.splice(index, 1);
     newPhotoUrls.splice(index, 1);
-    
+
     setMemory(prev => ({
       ...prev,
       photos: newPhotos,
@@ -118,15 +125,15 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // Save memory to Supabase
   const saveMemory = async () => {
     setIsProcessing(true);
-    
+
     try {
       // Check if user is authenticated
       const { data: sessionData } = await supabase.auth.getSession();
-      
+
       if (!sessionData.session) {
         throw new Error('Usuário não autenticado');
       }
-      
+
       // Format memory data for database
       const memoryData = {
         title: memory.title,
@@ -137,7 +144,7 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         user_id: sessionData.session.user.id,
         is_paid: false
       };
-      
+
       // Save or update memory
       let result;
       if (memory.id) {
@@ -156,18 +163,18 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           .select('id')
           .single();
       }
-      
+
       if (result.error) {
         throw result.error;
       }
-      
+
       // Update memory state with ID
       setMemory(prev => ({
         ...prev,
         id: result.data.id,
         userId: sessionData.session?.user.id
       }));
-      
+
       // Upload photos
       // Note: In a real app, you would upload photos to Supabase storage
       // and save references in the database
@@ -181,16 +188,32 @@ export const MemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const generateVideo = async () => {
     setIsProcessing(true);
+    console.log("Iniciando geração de vídeo com:", {
+      title: memory.title,
+      photosCount: memory.photos.length,
+      photoUrlsCount: memory.photoUrls.length,
+      spotifyLink: memory.spotifyLink,
+      emoji: memory.emoji
+    });
+
+    // Verificar se temos URLs de fotos válidas
+    if (memory.photoUrls.length === 0) {
+      console.error("Não há URLs de fotos para gerar o vídeo");
+      setIsProcessing(false);
+      return Promise.reject(new Error("Não há fotos para gerar o vídeo"));
+    }
+
     // Em uma aplicação real, isto seria uma chamada para uma API gerar o vídeo
     await new Promise(resolve => setTimeout(resolve, 3000));
-    
+
     // Em vez de usar uma URL fixa de vídeo, vamos usar um marcador para indicar
     // que o "vídeo" foi gerado e deve exibir nossas fotos em sequência
     setMemory(prev => ({
       ...prev,
       videoUrl: 'generated', // Usamos este marcador para indicar que devemos mostrar a apresentação de slides
     }));
-    
+
+    console.log("Vídeo gerado com sucesso");
     setIsProcessing(false);
     return Promise.resolve();
   };
