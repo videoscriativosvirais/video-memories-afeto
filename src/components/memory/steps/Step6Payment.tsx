@@ -6,12 +6,27 @@ import { CreditCard, Check, ArrowRight, Heart, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSearchParams } from 'react-router-dom';
 
 const Step6Payment: React.FC = () => {
   const { memory, prevStep, saveMemory } = useMemory();
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  
+  // Check for canceled payment from URL
+  const canceled = searchParams.get('canceled');
+  
+  React.useEffect(() => {
+    if (canceled) {
+      toast({
+        title: "Pagamento cancelado",
+        description: "O processo de pagamento foi cancelado. Você pode tentar novamente quando estiver pronto.",
+        variant: "destructive"
+      });
+    }
+  }, [canceled, toast]);
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -54,8 +69,11 @@ const Step6Payment: React.FC = () => {
         return;
       }
 
+      console.log("Resposta da função create-payment:", data);
+
       // Redirecionar para a página de checkout do Stripe
       if (data?.url) {
+        console.log("Redirecionando para:", data.url);
         window.location.href = data.url;
       } else {
         throw new Error('URL de checkout não retornada');

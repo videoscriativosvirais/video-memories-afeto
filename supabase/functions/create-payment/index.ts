@@ -1,18 +1,20 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@12.18.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
 
+// Configurações CORS
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
   console.log("🔔 Requisição create-payment recebida:", new Date().toISOString());
   console.log("🔔 URL:", req.url);
   console.log("🔔 Método:", req.method);
-
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     console.log("🔔 Requisição OPTIONS recebida - respondendo com CORS headers");
@@ -24,15 +26,17 @@ serve(async (req) => {
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-
+    
     if (!stripeSecretKey) {
       console.error("❌ STRIPE_SECRET_KEY não configurada");
+      throw new Error("STRIPE_SECRET_KEY não configurada");
     }
-
+    
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("❌ Configurações do Supabase incompletas");
+      throw new Error("Configurações do Supabase incompletas");
     }
-
+    
     console.log("🔔 Inicializando cliente Stripe");
     // Inicializar Stripe com a chave secreta
     const stripe = new Stripe(stripeSecretKey, {
@@ -55,7 +59,7 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     console.log("🔔 Token de autenticação extraído");
-
+    
     // Obter o usuário autenticado
     console.log("🔔 Verificando autenticação do usuário");
     const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
@@ -63,25 +67,25 @@ serve(async (req) => {
       console.error("❌ Erro de autenticação:", userError);
       throw new Error(`Erro de autenticação: ${userError.message}`);
     }
-
+    
     console.log("✅ Usuário autenticado:", userData.user.id);
 
     // Extrair dados da requisição
     const body = await req.json();
     const { memoryTitle, memoryId } = body;
-
+    
     console.log("🔔 Dados recebidos:", JSON.stringify(body));
-
+    
     if (!memoryId) {
       console.error("❌ ID da memória não fornecido");
       throw new Error("ID da memória é obrigatório");
     }
-
+    
     if (!memoryTitle) {
       console.error("❌ Título da memória não fornecido");
       throw new Error("Título da memória é obrigatório");
     }
-
+    
     // Verificar se a memória existe
     console.log("🔔 Verificando se a memória existe:", memoryId);
     const { data: memoryData, error: memoryError } = await supabaseAdmin
@@ -89,22 +93,22 @@ serve(async (req) => {
       .select('id, title, is_paid')
       .eq('id', memoryId)
       .maybeSingle();
-
+      
     if (memoryError) {
       console.error("❌ Erro ao verificar memória:", memoryError);
       throw new Error(`Erro ao verificar memória: ${memoryError.message}`);
     }
-
+    
     if (!memoryData) {
       console.error("❌ Memória não encontrada:", memoryId);
       throw new Error(`Memória com ID ${memoryId} não encontrada`);
     }
-
+    
     if (memoryData.is_paid) {
       console.log("⚠️ Memória já está marcada como paga:", memoryId);
       // Ainda permitimos o pagamento, mas logamos o aviso
     }
-
+    
     console.log("🔔 Criando sessão de checkout do Stripe");
     // Criar uma sessão de checkout do Stripe
     const origin = req.headers.get("origin") || "https://memoriasafetivas.com";
@@ -132,7 +136,7 @@ serve(async (req) => {
         memory_id: memoryId
       }
     });
-
+    
     console.log("✅ Sessão de checkout criada:", session.id);
     console.log("🔔 URL de sucesso:", `${origin}/dashboard?success=true&memory_id=${memoryId}`);
     console.log("🔔 URL de cancelamento:", `${origin}/criar-memoria?step=6&canceled=true`);
@@ -145,14 +149,14 @@ serve(async (req) => {
       .eq("memory_title", memoryTitle)
       .eq("user_id", userData.user.id)
       .maybeSingle();
-
+      
     if (purchaseCheckError) {
       console.error("❌ Erro ao verificar compras existentes:", purchaseCheckError);
     }
-
+    
     if (existingPurchase) {
       console.log("🔔 Compra existente encontrada:", existingPurchase);
-
+      
       // Atualizar a compra existente com o novo session_id
       console.log("🔔 Atualizando compra existente com novo session_id");
       const { error: updateError } = await supabaseAdmin
@@ -163,7 +167,7 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq("id", existingPurchase.id);
-
+        
       if (updateError) {
         console.error("❌ Erro ao atualizar compra existente:", updateError);
       } else {
@@ -183,7 +187,7 @@ serve(async (req) => {
         })
         .select()
         .single();
-
+      
       if (insertError) {
         console.error("❌ Erro ao registrar compra pendente:", insertError);
       } else {
@@ -194,7 +198,7 @@ serve(async (req) => {
     // Retornar a URL da sessão para redirecionamento
     console.log("✅ Retornando URL da sessão para redirecionamento");
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         url: session.url,
         sessionId: session.id,
         memoryId: memoryId,
@@ -208,10 +212,10 @@ serve(async (req) => {
   } catch (error) {
     console.error("❌ Erro ao criar sessão de pagamento:", error);
     console.error("❌ Stack trace:", error.stack);
-
+    
     // Responder com erro detalhado
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         error: error.message,
         timestamp: new Date().toISOString(),
         details: error.stack
