@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
@@ -11,8 +10,8 @@ const corsHeaders = {
 };
 
 // Chaves de configuração
-const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
+const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "sk_test_51RMDDNPDB9jSXXdQr5JuGNmaviMaM6tOOojDRumeV1XUJe7BKtsDyyI73vXeRLC2055DBcYQxFggOvZX4y1x8sW200sgBzHAQR";
+const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "https://bsribrdwyvrhzagoqxvr.supabase.co/functions/v1/webhook-stripe";
 
 serve(async (req) => {
   console.log("🔔 Webhook Stripe recebido:", new Date().toISOString());

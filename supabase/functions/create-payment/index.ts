@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
@@ -23,9 +22,9 @@ serve(async (req) => {
 
   try {
     // Verificar configurações
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "sk_test_51RMDDNPDB9jSXXdQr5JuGNmaviMaM6tOOojDRumeV1XUJe7BKtsDyyI73vXeRLC2055DBcYQxFggOvZX4y1x8sW200sgBzHAQR";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://bsribrdwyvrhzagoqxvr.supabase.co";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzcmlicmR3eXZyaHphZ29xeHZyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjY0MjIyMywiZXhwIjoyMDYyMjE4MjIzfQ.e6U_DS-0EJoajtw5kxI29YZY-Y5dtU09Ou68ISEruOc";
     
     if (!stripeSecretKey) {
       console.error("❌ STRIPE_SECRET_KEY não configurada");
