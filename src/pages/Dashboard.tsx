@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
-import { Layout } from '@/components/layout/Layout';
+import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -139,11 +138,13 @@ const Dashboard: React.FC = () => {
                 onClick={() => navigate(`/memoria/${memory.id}`)}
               >
                 <div className="relative h-48 overflow-hidden bg-gray-100">
-                  <MemorySlideshow 
-                    photos={memory.photoUrls || []} 
-                    autoplay={false} 
-                    showArrows={true}
-                  />
+                  {memory.photoUrls && memory.photoUrls.length > 0 && (
+                    <MemorySlideshow 
+                      photoUrls={memory.photoUrls || []} 
+                      autoplay={false} 
+                      showArrows={true}
+                    />
+                  )}
                   {!memory.is_paid && (
                     <div className="absolute top-0 right-0 bg-yellow-300 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded m-2">
                       Não salva
