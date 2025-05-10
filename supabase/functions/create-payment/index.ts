@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno";
@@ -22,14 +23,14 @@ serve(async (req) => {
 
   try {
     // Verificar configurações
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "sk_test_51RMDDNPDB9jSXXdQr5JuGNmaviMaM6tOOojDRumeV1XUJe7BKtsDyyI73vXeRLC2055DBcYQxFggOvZX4y1x8sW200sgBzHAQR";
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://bsribrdwyvrhzagoqxvr.supabase.co";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzcmlicmR3eXZyaHphZ29xeHZyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjY0MjIyMywiZXhwIjoyMDYyMjE4MjIzfQ.e6U_DS-0EJoajtw5kxI29YZY-Y5dtU09Ou68ISEruOc";
-    
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecretKey) {
       console.error("❌ STRIPE_SECRET_KEY não configurada");
       throw new Error("STRIPE_SECRET_KEY não configurada");
     }
+    
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("❌ Configurações do Supabase incompletas");
@@ -109,105 +110,111 @@ serve(async (req) => {
     }
     
     console.log("🔔 Criando sessão de checkout do Stripe");
-    // Criar uma sessão de checkout do Stripe
-    const origin = req.headers.get("origin") || "https://memoriasafetivas.com";
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "brl",
-            product_data: {
-              name: memoryTitle || "Memória Afetiva",
-              description: "Salvar permanentemente sua memória afetiva",
+    
+    try {
+      // Criar uma sessão de checkout do Stripe
+      const origin = req.headers.get("origin") || "https://memoriasafetivas.com";
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: "brl",
+              product_data: {
+                name: memoryTitle || "Memória Afetiva",
+                description: "Salvar permanentemente sua memória afetiva",
+              },
+              unit_amount: 1990, // R$ 19,90 em centavos
             },
-            unit_amount: 1990, // R$ 19,90 em centavos
+            quantity: 1,
           },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${origin}/dashboard?success=true&memory_id=${memoryId}`,
-      cancel_url: `${origin}/criar-memoria?step=6&canceled=true`,
-      metadata: {
-        user_id: userData.user.id,
-        memory_title: memoryTitle,
-        memory_id: memoryId
-      }
-    });
-    
-    console.log("✅ Sessão de checkout criada:", session.id);
-    console.log("🔔 URL de sucesso:", `${origin}/dashboard?success=true&memory_id=${memoryId}`);
-    console.log("🔔 URL de cancelamento:", `${origin}/criar-memoria?step=6&canceled=true`);
-
-    // Verificar se já existe uma compra pendente para esta memória
-    console.log("🔔 Verificando compras existentes para a memória:", memoryId);
-    const { data: existingPurchase, error: purchaseCheckError } = await supabaseAdmin
-      .from("purchases")
-      .select("id, status")
-      .eq("memory_title", memoryTitle)
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
-      
-    if (purchaseCheckError) {
-      console.error("❌ Erro ao verificar compras existentes:", purchaseCheckError);
-    }
-    
-    if (existingPurchase) {
-      console.log("🔔 Compra existente encontrada:", existingPurchase);
-      
-      // Atualizar a compra existente com o novo session_id
-      console.log("🔔 Atualizando compra existente com novo session_id");
-      const { error: updateError } = await supabaseAdmin
-        .from("purchases")
-        .update({
-          stripe_session_id: session.id,
-          status: "pendente",
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", existingPurchase.id);
-        
-      if (updateError) {
-        console.error("❌ Erro ao atualizar compra existente:", updateError);
-      } else {
-        console.log("✅ Compra existente atualizada com sucesso");
-      }
-    } else {
-      // Registrar a compra pendente
-      console.log("🔔 Registrando nova compra pendente");
-      const { data: newPurchase, error: insertError } = await supabaseAdmin
-        .from("purchases")
-        .insert({
+        ],
+        mode: "payment",
+        success_url: `${origin}/dashboard?success=true&memory_id=${memoryId}`,
+        cancel_url: `${origin}/criar-memoria?step=6&canceled=true`,
+        metadata: {
           user_id: userData.user.id,
-          stripe_session_id: session.id,
           memory_title: memoryTitle,
-          amount: 1990,
-          status: "pendente"
-        })
-        .select()
-        .single();
+          memory_id: memoryId
+        }
+      });
       
-      if (insertError) {
-        console.error("❌ Erro ao registrar compra pendente:", insertError);
-      } else {
-        console.log("✅ Compra pendente registrada com sucesso:", newPurchase.id);
-      }
-    }
+      console.log("✅ Sessão de checkout criada:", session.id);
+      console.log("🔔 URL de sucesso:", `${origin}/dashboard?success=true&memory_id=${memoryId}`);
+      console.log("🔔 URL de cancelamento:", `${origin}/criar-memoria?step=6&canceled=true`);
 
-    // Retornar a URL da sessão para redirecionamento
-    console.log("✅ Retornando URL da sessão para redirecionamento");
-    return new Response(
-      JSON.stringify({ 
-        url: session.url,
-        sessionId: session.id,
-        memoryId: memoryId,
-        timestamp: new Date().toISOString()
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+      // Verificar se já existe uma compra pendente para esta memória
+      console.log("🔔 Verificando compras existentes para a memória:", memoryId);
+      const { data: existingPurchase, error: purchaseCheckError } = await supabaseAdmin
+        .from("purchases")
+        .select("id, status")
+        .eq("memory_title", memoryTitle)
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+        
+      if (purchaseCheckError) {
+        console.error("❌ Erro ao verificar compras existentes:", purchaseCheckError);
       }
-    );
+      
+      if (existingPurchase) {
+        console.log("🔔 Compra existente encontrada:", existingPurchase);
+        
+        // Atualizar a compra existente com o novo session_id
+        console.log("🔔 Atualizando compra existente com novo session_id");
+        const { error: updateError } = await supabaseAdmin
+          .from("purchases")
+          .update({
+            stripe_session_id: session.id,
+            status: "pendente",
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingPurchase.id);
+          
+        if (updateError) {
+          console.error("❌ Erro ao atualizar compra existente:", updateError);
+        } else {
+          console.log("✅ Compra existente atualizada com sucesso");
+        }
+      } else {
+        // Registrar a compra pendente
+        console.log("🔔 Registrando nova compra pendente");
+        const { data: newPurchase, error: insertError } = await supabaseAdmin
+          .from("purchases")
+          .insert({
+            user_id: userData.user.id,
+            stripe_session_id: session.id,
+            memory_title: memoryTitle,
+            amount: 1990,
+            status: "pendente"
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error("❌ Erro ao registrar compra pendente:", insertError);
+        } else {
+          console.log("✅ Compra pendente registrada com sucesso:", newPurchase.id);
+        }
+      }
+
+      // Retornar a URL da sessão para redirecionamento
+      console.log("✅ Retornando URL da sessão para redirecionamento");
+      return new Response(
+        JSON.stringify({ 
+          url: session.url,
+          sessionId: session.id,
+          memoryId: memoryId,
+          timestamp: new Date().toISOString()
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    } catch (stripeError) {
+      console.error("❌ Erro Stripe:", stripeError);
+      throw new Error(`Erro ao criar sessão de checkout: ${stripeError.message}`);
+    }
   } catch (error) {
     console.error("❌ Erro ao criar sessão de pagamento:", error);
     console.error("❌ Stack trace:", error.stack);

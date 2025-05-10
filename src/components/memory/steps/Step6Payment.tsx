@@ -11,6 +11,7 @@ import { useSearchParams } from 'react-router-dom';
 const Step6Payment: React.FC = () => {
   const { memory, prevStep, saveMemory } = useMemory();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -30,6 +31,7 @@ const Step6Payment: React.FC = () => {
 
   const handlePayment = async () => {
     setIsProcessing(true);
+    setPaymentError(null);
     
     try {
       // Primeiro, salvar a memória no Supabase para obter um ID
@@ -60,13 +62,7 @@ const Step6Payment: React.FC = () => {
 
       if (error) {
         console.error('Erro ao processar pagamento:', error);
-        toast({
-          title: "Erro",
-          description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
-          variant: "destructive"
-        });
-        setIsProcessing(false);
-        return;
+        throw new Error(`Erro ao processar o pagamento: ${error.message || 'Por favor, tente novamente.'}`);
       }
 
       console.log("Resposta da função create-payment:", data);
@@ -80,6 +76,9 @@ const Step6Payment: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro ao processar pagamento:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro ao processar o pagamento';
+      setPaymentError(errorMessage);
+      
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
@@ -97,6 +96,13 @@ const Step6Payment: React.FC = () => {
       <p className="text-gray-600 mb-8">
         Para salvar permanentemente sua memória afetiva e poder acessá-la a qualquer momento, complete o pagamento abaixo.
       </p>
+      
+      {paymentError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 relative">
+          <strong className="font-bold">Erro:</strong>
+          <span className="block sm:inline"> Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.</span>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Memory Summary */}

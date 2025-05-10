@@ -140,7 +140,7 @@ const Dashboard: React.FC = () => {
                 <div className="relative h-48 overflow-hidden bg-gray-100">
                   {memory.photoUrls && memory.photoUrls.length > 0 && (
                     <MemorySlideshow 
-                      photoUrls={memory.photoUrls || []} 
+                      photos={memory.photoUrls} 
                       autoplay={false} 
                       showArrows={true}
                     />
